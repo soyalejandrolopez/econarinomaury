@@ -33,7 +33,7 @@ const ScheduleCollection = () => {
     setIsLoading(true);
     try {
       const { error } = await supabase.from('collections').insert({
-        user_id: user.email,
+        user_id: user.id,
         date: formData.date,
         time: formData.time,
         waste_type: formData.wasteType,
@@ -44,8 +44,8 @@ const ScheduleCollection = () => {
 
       if (error) throw error;
 
-      dataCache.clear(`collections_${user.email}`);
-      dataCache.clear(`activities_${user.email}_6`);
+      dataCache.clear(`collections_${user.id}`);
+      dataCache.clear(`activities_${user.id}_6`);
       toast({ title: '¡Recolección programada!', description: 'Te notificaremos cuando esté confirmada.' });
       navigate('/dashboard');
     } catch (error) {

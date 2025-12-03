@@ -15,10 +15,10 @@ export const useUserStats = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!user?.email) return;
+      if (!user?.id) return;
 
       // Verificar caché primero (opcional)
-      const cacheKey = `stats_${user.email}`;
+      const cacheKey = `stats_${user.id}`;
       try {
         const cached = dataCache.get(cacheKey);
         if (cached) {
@@ -34,7 +34,7 @@ export const useUserStats = () => {
         const { data, error } = await supabase
           .from('user_stats')
           .select('*')
-          .eq('user_id', user.email)
+          .eq('user_id', user.id)
           .gte('month', new Date(new Date().getFullYear(), 0, 1).toISOString())
           .order('month', { ascending: false });
 
@@ -69,11 +69,11 @@ export const useUserActivities = (limit = 6) => {
 
   useEffect(() => {
     const fetchActivities = async () => {
-      if (!user?.email) return;
+      if (!user?.id) return;
 
-      const cacheKey = `activities_${user.email}_${limit}`;
+      const cacheKey = `activities_${user.id}_${limit}`;
       const cached = dataCache.get(cacheKey);
-      
+
       if (cached) {
         setActivities(cached);
         setLoading(false);
@@ -84,7 +84,7 @@ export const useUserActivities = (limit = 6) => {
         const { data, error } = await supabase
           .from('activities')
           .select('*')
-          .eq('user_id', user.email)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(limit);
 
@@ -112,11 +112,11 @@ export const useUserCollections = () => {
 
   useEffect(() => {
     const fetchCollections = async () => {
-      if (!user?.email) return;
+      if (!user?.id) return;
 
-      const cacheKey = `collections_${user.email}`;
+      const cacheKey = `collections_${user.id}`;
       const cached = dataCache.get(cacheKey);
-      
+
       if (cached) {
         setCollections(cached);
         setLoading(false);
@@ -127,7 +127,7 @@ export const useUserCollections = () => {
         const { data, error } = await supabase
           .from('collections')
           .select('*')
-          .eq('user_id', user.email)
+          .eq('user_id', user.id)
           .order('date', { ascending: true });
 
         if (!error && data) {
@@ -154,11 +154,11 @@ export const useUserGoals = () => {
 
   useEffect(() => {
     const fetchGoals = async () => {
-      if (!user?.email) return;
+      if (!user?.id) return;
 
-      const cacheKey = `goals_${user.email}`;
+      const cacheKey = `goals_${user.id}`;
       const cached = dataCache.get(cacheKey);
-      
+
       if (cached) {
         setGoals(cached);
         setLoading(false);
@@ -169,7 +169,7 @@ export const useUserGoals = () => {
         const { data, error } = await supabase
           .from('goals')
           .select('*')
-          .eq('user_id', user.email)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (!error && data) {

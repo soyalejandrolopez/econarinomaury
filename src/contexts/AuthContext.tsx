@@ -4,6 +4,7 @@ import { dataCache } from '@/lib/cache';
 import type { Session } from '@supabase/supabase-js';
 
 interface UserProfile {
+  id: string;
   name: string;
   email: string;
   establishment: string;
@@ -42,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('name, email, establishment, type, city, role')
+        .select('id, name, email, establishment, type, city, role')
         .eq('id', userId)
         .single();
 
@@ -74,6 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Si no existe el perfil, usar datos del metadata
           if (!profile) {
             profile = {
+              id: session.user.id,
               name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuario',
               email: session.user.email || '',
               establishment: session.user.user_metadata?.establishment || 'Mi Establecimiento',
@@ -178,7 +180,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 3. Actualizar estado local solo si hay sesión
       if (authData.session) {
         setSession(authData.session);
-        setUser(profileData);
+        setUser({
+          id: authData.user.id,
+          ...profileData
+        });
         return { success: true };
       }
 
@@ -216,6 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!profile) {
         console.warn('Profile not found, using metadata or defaults');
         profile = {
+          id: data.user.id,
           name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario',
           email: data.user.email || email,
           establishment: data.user.user_metadata?.establishment || 'Mi Establecimiento',

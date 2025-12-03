@@ -35,7 +35,7 @@ const Goals = () => {
 
     try {
       const { data, error } = await supabase.from('goals').insert({
-        user_id: user.email,
+        user_id: user.id,
         title: newGoal.title,
         target: parseFloat(newGoal.target),
         current: 0,
@@ -47,7 +47,7 @@ const Goals = () => {
       if (data) {
         setGoals([...goals, data[0]]);
         setNewGoal({ title: '', target: '', unit: 'kg' });
-        dataCache.clear(`goals_${user.email}`);
+        dataCache.clear(`goals_${user.id}`);
         toast({ title: '¡Meta creada!', description: 'Tu nueva meta ha sido agregada' });
       }
     } catch (error) {
@@ -56,13 +56,14 @@ const Goals = () => {
   };
 
   const handleDeleteGoal = async (id: string) => {
+    if (!user) return;
     try {
       const { error } = await supabase.from('goals').delete().eq('id', id);
-      
+
       if (error) throw error;
-      
+
       setGoals(goals.filter(g => g.id !== id));
-      dataCache.clear(`goals_${user.email}`);
+      dataCache.clear(`goals_${user.id}`);
       toast({ title: 'Meta eliminada', description: 'La meta ha sido removida' });
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo eliminar la meta', variant: 'destructive' });
