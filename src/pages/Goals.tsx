@@ -7,8 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
+import DashboardSidebar from '@/components/DashboardSidebar';
 import { Target, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -47,10 +46,10 @@ const Goals = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen bg-background flex">
+      <DashboardSidebar />
+      <div className="flex-1 lg:ml-64">
+        <div className="p-6 lg:p-8 max-w-4xl mx-auto">
           <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" /> Volver al Dashboard
           </Button>
@@ -131,7 +130,6 @@ const Goals = () => {
           </Card>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

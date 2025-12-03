@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
+import DashboardSidebar from '@/components/DashboardSidebar';
 import { Calendar, ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -54,10 +53,10 @@ const ScheduleCollection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-2xl">
+    <div className="min-h-screen bg-background flex">
+      <DashboardSidebar />
+      <div className="flex-1 lg:ml-64">
+        <div className="p-6 lg:p-8 max-w-2xl mx-auto">
           <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" /> Volver al Dashboard
           </Button>
@@ -112,7 +111,6 @@ const ScheduleCollection = () => {
           </Card>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

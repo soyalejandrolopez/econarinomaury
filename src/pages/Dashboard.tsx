@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import Navigation from '@/components/Navigation';
+import DashboardSidebar from '@/components/DashboardSidebar';
 import Footer from '@/components/Footer';
 import {
   TrendingUp,
@@ -184,11 +184,11 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <div className="min-h-screen bg-background flex">
+      <DashboardSidebar />
 
-      <div className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
+      <div className="flex-1 lg:ml-64">
+        <div className="p-6 lg:p-8">
           {/* Welcome Header */}
           <div className="mb-8 animate-slide-up">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -657,8 +657,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 };

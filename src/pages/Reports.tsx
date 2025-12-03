@@ -3,8 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
+import DashboardSidebar from '@/components/DashboardSidebar';
 import { ArrowLeft, TrendingUp, Calendar, Download } from 'lucide-react';
 
 const Reports = () => {
@@ -27,10 +26,10 @@ const Reports = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-background flex">
+      <DashboardSidebar />
+      <div className="flex-1 lg:ml-64">
+        <div className="p-6 lg:p-8">
           <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" /> Volver al Dashboard
           </Button>
@@ -137,7 +136,6 @@ const Reports = () => {
           </Tabs>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

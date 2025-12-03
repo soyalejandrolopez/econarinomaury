@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
+import DashboardSidebar from '@/components/DashboardSidebar';
 import { Download, ArrowLeft, Award } from 'lucide-react';
 
 const Certificate = () => {
@@ -26,10 +25,10 @@ const Certificate = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen bg-background flex">
+      <DashboardSidebar />
+      <div className="flex-1 lg:ml-64">
+        <div className="p-6 lg:p-8 max-w-4xl mx-auto">
           <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" /> Volver al Dashboard
           </Button>
@@ -77,7 +76,6 @@ const Certificate = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
