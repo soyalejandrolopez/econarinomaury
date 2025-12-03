@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
+import DashboardSidebar from '@/components/DashboardSidebar';
 import {
   MapPin,
   Building2,
@@ -175,11 +174,10 @@ const CollectionMap = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-
-      <div className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-background flex">
+      <DashboardSidebar />
+      <div className="flex-1 lg:ml-64">
+        <div className="p-6 lg:p-8">
           {/* Header */}
           <div className="mb-8 animate-slide-up">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent mb-4">
@@ -574,8 +572,6 @@ const CollectionMap = () => {
           </Tabs>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 };
