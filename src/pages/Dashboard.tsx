@@ -190,19 +190,19 @@ const Dashboard = () => {
       <div className="flex-1 lg:ml-64">
         <div className="p-6 lg:p-8">
           {/* Welcome Header */}
-          <div className="mb-8 animate-slide-up">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div className="mb-6 animate-slide-up">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-muted-foreground">{greeting},</span>
-                  <Sparkles className="w-5 h-5 text-accent" />
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm text-muted-foreground">{greeting},</span>
+                  <Sparkles className="w-4 h-4 text-accent" />
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-2">
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">
                   <span className="text-gradient">{user.name}</span>
                 </h1>
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Building2 className="w-4 h-4" />
-                  <span>{user.establishment}</span>
+                  <span className="truncate max-w-xs">{user.establishment}</span>
                   <span className="text-border">•</span>
                   <MapPin className="w-4 h-4" />
                   <span>{user.city}</span>
