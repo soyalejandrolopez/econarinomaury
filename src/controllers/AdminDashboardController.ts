@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   AdminDashboardModel,
@@ -8,8 +8,7 @@ import {
   UsersByType,
   GlobalActivity,
   PlatformUser,
-  RecentCollection,
-  MonthlyGrowth
+  RecentCollection
 } from '@/models/AdminDashboardModel';
 
 export interface AdminDashboardState {
@@ -19,23 +18,13 @@ export interface AdminDashboardState {
   recentActivities: GlobalActivity[];
   allUsers: PlatformUser[];
   recentCollections: RecentCollection[];
-  monthlyGrowth: MonthlyGrowth[];
   environmentalImpact: {
     co2Avoided: number;
     treesEquivalent: number;
     bagsAvoided: number;
     waterSaved: number;
   };
-  loading: {
-    stats: boolean;
-    cities: boolean;
-    types: boolean;
-    activities: boolean;
-    users: boolean;
-    collections: boolean;
-    growth: boolean;
-    impact: boolean;
-  };
+  initialLoading: boolean;
 }
 
 const initialState: AdminDashboardState = {
@@ -54,271 +43,170 @@ const initialState: AdminDashboardState = {
   recentActivities: [],
   allUsers: [],
   recentCollections: [],
-  monthlyGrowth: [],
   environmentalImpact: {
     co2Avoided: 0,
     treesEquivalent: 0,
     bagsAvoided: 0,
     waterSaved: 0
   },
-  loading: {
-    stats: true,
-    cities: true,
-    types: true,
-    activities: true,
-    users: true,
-    collections: true,
-    growth: true,
-    impact: true
-  }
+  initialLoading: true
 };
 
 export const useAdminDashboardController = (isAdmin: boolean) => {
   const [state, setState] = useState<AdminDashboardState>(initialState);
-  const [model] = useState<AdminDashboardModel>(() => getAdminDashboardModel());
+  const modelRef = useRef<AdminDashboardModel | null>(null);
+  const initialLoadDone = useRef(false);
+  const channelsRef = useRef<any[]>([]);
 
-  // Cargar estadísticas globales
-  const loadGlobalStats = useCallback(async () => {
-    if (!isAdmin) return;
+  // Inicializar modelo
+  useEffect(() => {
+    if (isAdmin && !modelRef.current) {
+      modelRef.current = getAdminDashboardModel();
+    }
+  }, [isAdmin]);
 
-    setState(prev => ({ ...prev, loading: { ...prev.loading, stats: true } }));
+  // Cargar todos los datos
+  const loadAllData = useCallback(async (showLoading = false) => {
+    const model = modelRef.current;
+    if (!model || !isAdmin) return;
+
+    if (showLoading) {
+      setState(prev => ({ ...prev, initialLoading: true }));
+    }
 
     try {
-      const globalStats = await model.getGlobalStats();
-      setState(prev => ({
-        ...prev,
+      const [globalStats, usersByCity, usersByType, recentActivities, allUsers, recentCollections, environmentalImpact] = await Promise.all([
+        model.getGlobalStats(),
+        model.getUsersByCity(),
+        model.getUsersByType(),
+        model.getRecentActivities(15),
+        model.getAllUsers(),
+        model.getRecentCollections(10),
+        model.getGlobalEnvironmentalImpact()
+      ]);
+
+      setState({
         globalStats,
-        loading: { ...prev.loading, stats: false }
-      }));
-    } catch (error) {
-      console.error('Error loading global stats:', error);
-      setState(prev => ({ ...prev, loading: { ...prev.loading, stats: false } }));
-    }
-  }, [isAdmin, model]);
-
-  // Cargar usuarios por ciudad
-  const loadUsersByCity = useCallback(async () => {
-    if (!isAdmin) return;
-
-    setState(prev => ({ ...prev, loading: { ...prev.loading, cities: true } }));
-
-    try {
-      const usersByCity = await model.getUsersByCity();
-      setState(prev => ({
-        ...prev,
         usersByCity,
-        loading: { ...prev.loading, cities: false }
-      }));
+        usersByType,
+        recentActivities,
+        allUsers,
+        recentCollections,
+        environmentalImpact,
+        initialLoading: false
+      });
     } catch (error) {
-      console.error('Error loading users by city:', error);
-      setState(prev => ({ ...prev, loading: { ...prev.loading, cities: false } }));
+      console.error('Error loading admin dashboard data:', error);
+      setState(prev => ({ ...prev, initialLoading: false }));
     }
-  }, [isAdmin, model]);
+  }, [isAdmin]);
 
-  // Cargar usuarios por tipo
-  const loadUsersByType = useCallback(async () => {
-    if (!isAdmin) return;
-
-    setState(prev => ({ ...prev, loading: { ...prev.loading, types: true } }));
+  // Funciones de actualización silenciosas
+  const refreshStats = useCallback(async () => {
+    const model = modelRef.current;
+    if (!model) return;
 
     try {
-      const usersByType = await model.getUsersByType();
-      setState(prev => ({
-        ...prev,
-        usersByType,
-        loading: { ...prev.loading, types: false }
-      }));
+      const [globalStats, environmentalImpact] = await Promise.all([
+        model.getGlobalStats(),
+        model.getGlobalEnvironmentalImpact()
+      ]);
+      setState(prev => ({ ...prev, globalStats, environmentalImpact }));
     } catch (error) {
-      console.error('Error loading users by type:', error);
-      setState(prev => ({ ...prev, loading: { ...prev.loading, types: false } }));
+      console.error('Error refreshing stats:', error);
     }
-  }, [isAdmin, model]);
+  }, []);
 
-  // Cargar actividades recientes
-  const loadRecentActivities = useCallback(async () => {
-    if (!isAdmin) return;
+  const refreshUsers = useCallback(async () => {
+    const model = modelRef.current;
+    if (!model) return;
 
-    setState(prev => ({ ...prev, loading: { ...prev.loading, activities: true } }));
+    try {
+      const [usersByCity, usersByType, allUsers] = await Promise.all([
+        model.getUsersByCity(),
+        model.getUsersByType(),
+        model.getAllUsers()
+      ]);
+      setState(prev => ({ ...prev, usersByCity, usersByType, allUsers }));
+    } catch (error) {
+      console.error('Error refreshing users:', error);
+    }
+  }, []);
+
+  const refreshActivities = useCallback(async () => {
+    const model = modelRef.current;
+    if (!model) return;
 
     try {
       const recentActivities = await model.getRecentActivities(15);
-      setState(prev => ({
-        ...prev,
-        recentActivities,
-        loading: { ...prev.loading, activities: false }
-      }));
+      setState(prev => ({ ...prev, recentActivities }));
     } catch (error) {
-      console.error('Error loading recent activities:', error);
-      setState(prev => ({ ...prev, loading: { ...prev.loading, activities: false } }));
+      console.error('Error refreshing activities:', error);
     }
-  }, [isAdmin, model]);
+  }, []);
 
-  // Cargar todos los usuarios
-  const loadAllUsers = useCallback(async () => {
-    if (!isAdmin) return;
-
-    setState(prev => ({ ...prev, loading: { ...prev.loading, users: true } }));
+  const refreshCollections = useCallback(async () => {
+    const model = modelRef.current;
+    if (!model) return;
 
     try {
-      const allUsers = await model.getAllUsers();
-      setState(prev => ({
-        ...prev,
-        allUsers,
-        loading: { ...prev.loading, users: false }
-      }));
+      const [recentCollections, globalStats] = await Promise.all([
+        model.getRecentCollections(10),
+        model.getGlobalStats()
+      ]);
+      setState(prev => ({ ...prev, recentCollections, globalStats }));
     } catch (error) {
-      console.error('Error loading all users:', error);
-      setState(prev => ({ ...prev, loading: { ...prev.loading, users: false } }));
+      console.error('Error refreshing collections:', error);
     }
-  }, [isAdmin, model]);
+  }, []);
 
-  // Cargar recolecciones recientes
-  const loadRecentCollections = useCallback(async () => {
-    if (!isAdmin) return;
-
-    setState(prev => ({ ...prev, loading: { ...prev.loading, collections: true } }));
-
-    try {
-      const recentCollections = await model.getRecentCollections(10);
-      setState(prev => ({
-        ...prev,
-        recentCollections,
-        loading: { ...prev.loading, collections: false }
-      }));
-    } catch (error) {
-      console.error('Error loading recent collections:', error);
-      setState(prev => ({ ...prev, loading: { ...prev.loading, collections: false } }));
-    }
-  }, [isAdmin, model]);
-
-  // Cargar crecimiento mensual
-  const loadMonthlyGrowth = useCallback(async () => {
-    if (!isAdmin) return;
-
-    setState(prev => ({ ...prev, loading: { ...prev.loading, growth: true } }));
-
-    try {
-      const monthlyGrowth = await model.getMonthlyGrowth();
-      setState(prev => ({
-        ...prev,
-        monthlyGrowth,
-        loading: { ...prev.loading, growth: false }
-      }));
-    } catch (error) {
-      console.error('Error loading monthly growth:', error);
-      setState(prev => ({ ...prev, loading: { ...prev.loading, growth: false } }));
-    }
-  }, [isAdmin, model]);
-
-  // Cargar impacto ambiental
-  const loadEnvironmentalImpact = useCallback(async () => {
-    if (!isAdmin) return;
-
-    setState(prev => ({ ...prev, loading: { ...prev.loading, impact: true } }));
-
-    try {
-      const environmentalImpact = await model.getGlobalEnvironmentalImpact();
-      setState(prev => ({
-        ...prev,
-        environmentalImpact,
-        loading: { ...prev.loading, impact: false }
-      }));
-    } catch (error) {
-      console.error('Error loading environmental impact:', error);
-      setState(prev => ({ ...prev, loading: { ...prev.loading, impact: false } }));
-    }
-  }, [isAdmin, model]);
-
-  // Cargar todos los datos
-  const loadAllData = useCallback(async () => {
-    if (!isAdmin) return;
-
-    await Promise.all([
-      loadGlobalStats(),
-      loadUsersByCity(),
-      loadUsersByType(),
-      loadRecentActivities(),
-      loadAllUsers(),
-      loadRecentCollections(),
-      loadMonthlyGrowth(),
-      loadEnvironmentalImpact()
-    ]);
-  }, [
-    isAdmin,
-    loadGlobalStats,
-    loadUsersByCity,
-    loadUsersByType,
-    loadRecentActivities,
-    loadAllUsers,
-    loadRecentCollections,
-    loadMonthlyGrowth,
-    loadEnvironmentalImpact
-  ]);
-
-  // Cargar datos al montar
+  // Carga inicial
   useEffect(() => {
-    if (isAdmin) {
-      loadAllData();
+    if (isAdmin && modelRef.current && !initialLoadDone.current) {
+      initialLoadDone.current = true;
+      loadAllData(true);
     }
   }, [isAdmin, loadAllData]);
 
-  // Suscribirse a cambios en tiempo real
+  // Suscripciones en tiempo real
   useEffect(() => {
     if (!isAdmin) return;
 
-    const channels = [
-      supabase
-        .channel('admin-profiles')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          loadGlobalStats();
-          loadUsersByCity();
-          loadUsersByType();
-          loadAllUsers();
-        })
-        .subscribe(),
+    // Limpiar canales anteriores
+    channelsRef.current.forEach(channel => {
+      supabase.removeChannel(channel);
+    });
+    channelsRef.current = [];
 
-      supabase
-        .channel('admin-stats')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_stats' }, () => {
-          loadGlobalStats();
-          loadUsersByCity();
-          loadUsersByType();
-          loadMonthlyGrowth();
-          loadEnvironmentalImpact();
-        })
-        .subscribe(),
+    const channel1 = supabase
+      .channel('admin-profiles-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, refreshUsers)
+      .subscribe();
 
-      supabase
-        .channel('admin-collections')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'collections' }, () => {
-          loadGlobalStats();
-          loadRecentCollections();
-        })
-        .subscribe(),
+    const channel2 = supabase
+      .channel('admin-stats-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_stats' }, refreshStats)
+      .subscribe();
 
-      supabase
-        .channel('admin-activities')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
-          loadGlobalStats();
-          loadRecentActivities();
-        })
-        .subscribe()
-    ];
+    const channel3 = supabase
+      .channel('admin-collections-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'collections' }, refreshCollections)
+      .subscribe();
+
+    const channel4 = supabase
+      .channel('admin-activities-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, refreshActivities)
+      .subscribe();
+
+    channelsRef.current = [channel1, channel2, channel3, channel4];
 
     return () => {
-      channels.forEach(channel => supabase.removeChannel(channel));
+      channelsRef.current.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current = [];
     };
-  }, [
-    isAdmin,
-    loadGlobalStats,
-    loadUsersByCity,
-    loadUsersByType,
-    loadAllUsers,
-    loadRecentCollections,
-    loadRecentActivities,
-    loadMonthlyGrowth,
-    loadEnvironmentalImpact
-  ]);
+  }, [isAdmin, refreshStats, refreshUsers, refreshActivities, refreshCollections]);
 
   // Helpers
   const getTypeLabel = (type: string): string => {
@@ -348,14 +236,6 @@ export const useAdminDashboardController = (isAdmin: boolean) => {
     return cities[city?.toLowerCase()] || city;
   };
 
-  const formatDate = (dateStr: string): string => {
-    return new Date(dateStr).toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
   const formatDateTime = (dateStr: string): string => {
     return new Date(dateStr).toLocaleDateString('es-ES', {
       day: 'numeric',
@@ -365,24 +245,11 @@ export const useAdminDashboardController = (isAdmin: boolean) => {
     });
   };
 
-  const isLoading = Object.values(state.loading).some(v => v);
-
   return {
     state,
-    loadAllData,
-    loadGlobalStats,
-    loadUsersByCity,
-    loadUsersByType,
-    loadRecentActivities,
-    loadAllUsers,
-    loadRecentCollections,
-    loadMonthlyGrowth,
-    loadEnvironmentalImpact,
-    // Helpers
+    loadAllData: () => loadAllData(true),
     getTypeLabel,
     getCityLabel,
-    formatDate,
-    formatDateTime,
-    isLoading
+    formatDateTime
   };
 };

@@ -107,7 +107,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
     {
       icon: Recycle,
       label: 'Residuos Aprovechados',
-      value: state.loading.stats ? '...' : Math.round(state.stats.wasteCollected).toString(),
+      value: state.initialLoading ? '...' : Math.round(state.stats.wasteCollected).toString(),
       unit: 'kg',
       change: state.monthlyChange.waste >= 0 ? `+${state.monthlyChange.waste}%` : `${state.monthlyChange.waste}%`,
       changeType: state.monthlyChange.waste >= 0 ? 'positive' : 'negative',
@@ -120,7 +120,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
     {
       icon: Leaf,
       label: 'Reducción CO₂',
-      value: state.loading.stats ? '...' : Math.round(state.stats.co2Reduced).toString(),
+      value: state.initialLoading ? '...' : Math.round(state.stats.co2Reduced).toString(),
       unit: 'kg CO₂eq',
       change: state.monthlyChange.co2 >= 0 ? `+${state.monthlyChange.co2}%` : `${state.monthlyChange.co2}%`,
       changeType: state.monthlyChange.co2 >= 0 ? 'positive' : 'negative',
@@ -133,7 +133,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
     {
       icon: TrendingUp,
       label: 'Ahorro Económico',
-      value: state.loading.stats ? '...' : `$${Math.round(state.stats.economicSavings).toLocaleString()}`,
+      value: state.initialLoading ? '...' : `$${Math.round(state.stats.economicSavings).toLocaleString()}`,
       unit: 'COP',
       change: state.monthlyChange.savings >= 0 ? `+${state.monthlyChange.savings}%` : `${state.monthlyChange.savings}%`,
       changeType: state.monthlyChange.savings >= 0 ? 'positive' : 'negative',
@@ -146,7 +146,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
     {
       icon: Award,
       label: 'Puntos Sostenibilidad',
-      value: state.loading.stats ? '...' : state.stats.sustainabilityPoints.toLocaleString(),
+      value: state.initialLoading ? '...' : state.stats.sustainabilityPoints.toLocaleString(),
       unit: 'pts',
       change: '+0%',
       changeType: 'positive',
@@ -244,7 +244,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
                 <div className="text-sm text-muted-foreground">Próxima recolección</div>
                 <div className="font-bold flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-primary" />
-                  {state.loading.nextCollection ? 'Cargando...' : formatNextCollectionDate()}
+                  {state.initialLoading ? 'Cargando...' : formatNextCollectionDate()}
                 </div>
               </div>
             </div>
@@ -320,7 +320,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
             </div>
           </div>
 
-          {state.loading.monthly ? (
+          {state.initialLoading ? (
             <div className="h-72 flex items-center justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
@@ -412,7 +412,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-muted-foreground">Progreso actual</span>
                   <span className="font-bold text-accent">
-                    {state.loading.goal ? '...' : `${Math.round(state.currentGoal?.currentAmount || 0)} / ${state.currentGoal?.targetAmount || 100} kg`}
+                    {state.initialLoading ? '...' : `${Math.round(state.currentGoal?.currentAmount || 0)} / ${state.currentGoal?.targetAmount || 100} kg`}
                   </span>
                 </div>
                 <Progress value={getGoalProgress()} className="h-3" />
@@ -547,7 +547,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
                 Ver Detalles <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
-            {state.loading.waste ? (
+            {state.initialLoading ? (
               <div className="flex items-center justify-center h-48">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
@@ -599,7 +599,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
                 {achievementCounts.unlocked} de {achievementCounts.total} desbloqueados
               </div>
             </div>
-            {state.loading.achievements ? (
+            {state.initialLoading ? (
               <div className="flex items-center justify-center h-48">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
@@ -653,7 +653,7 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
               <p className="text-xs text-muted-foreground">Tu contribución al planeta</p>
             </div>
           </div>
-          {state.loading.impact ? (
+          {state.initialLoading ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>

@@ -143,12 +143,12 @@ const AdminDashboardView = ({ isAdmin }: AdminDashboardViewProps) => {
               <div className={`w-14 h-14 rounded-2xl ${stat.bgColor} flex items-center justify-center`}>
                 <stat.icon className={`w-7 h-7 ${stat.iconColor}`} />
               </div>
-              {state.loading.stats && (
+              {state.initialLoading && (
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               )}
             </div>
             <div className="mt-4">
-              <div className="text-3xl font-bold">{state.loading.stats ? '...' : stat.value}</div>
+              <div className="text-3xl font-bold">{state.initialLoading ? '...' : stat.value}</div>
               <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
               <div className="text-xs text-muted-foreground/70 mt-1">{stat.description}</div>
             </div>
@@ -171,7 +171,7 @@ const AdminDashboardView = ({ isAdmin }: AdminDashboardViewProps) => {
               </div>
             </div>
           </div>
-          {state.loading.cities ? (
+          {state.initialLoading ? (
             <div className="flex items-center justify-center h-48">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
@@ -215,7 +215,7 @@ const AdminDashboardView = ({ isAdmin }: AdminDashboardViewProps) => {
               </div>
             </div>
           </div>
-          {state.loading.types ? (
+          {state.initialLoading ? (
             <div className="flex items-center justify-center h-48">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
@@ -271,7 +271,7 @@ const AdminDashboardView = ({ isAdmin }: AdminDashboardViewProps) => {
                 Actualización en tiempo real
               </div>
             </div>
-            {state.loading.activities ? (
+            {state.initialLoading ? (
               <div className="flex items-center justify-center h-48">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
@@ -330,7 +330,7 @@ const AdminDashboardView = ({ isAdmin }: AdminDashboardViewProps) => {
               <h2 className="text-2xl font-bold">Todos los Usuarios</h2>
               <span className="text-sm text-muted-foreground">{state.allUsers.length} registrados</span>
             </div>
-            {state.loading.users ? (
+            {state.initialLoading ? (
               <div className="flex items-center justify-center h-48">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
@@ -400,7 +400,7 @@ const AdminDashboardView = ({ isAdmin }: AdminDashboardViewProps) => {
                 </span>
               </div>
             </div>
-            {state.loading.collections ? (
+            {state.initialLoading ? (
               <div className="flex items-center justify-center h-48">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
@@ -465,7 +465,7 @@ const AdminDashboardView = ({ isAdmin }: AdminDashboardViewProps) => {
             <Globe className="w-8 h-8" />
             <h2 className="text-2xl font-bold">Impacto Ambiental Global</h2>
           </div>
-          {state.loading.impact ? (
+          {state.initialLoading ? (
             <div className="flex items-center justify-center h-24">
               <Loader2 className="w-8 h-8 animate-spin" />
             </div>
