@@ -51,23 +51,31 @@ const Login = () => {
 
     setIsLoading(true);
 
-    const result = await login(email, password);
+    try {
+      const result = await login(email, password);
 
-    setIsLoading(false);
+      if (result.success) {
+        toast({
+          title: '¡Bienvenido de nuevo!',
+          description: 'Accediendo a tu panel de control...',
+        });
 
-    if (result.success) {
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
+      } else {
+        setIsLoading(false);
+        toast({
+          title: 'Error de autenticación',
+          description: result.error || 'Correo o contraseña incorrectos',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      setIsLoading(false);
       toast({
-        title: '¡Bienvenido de nuevo!',
-        description: 'Accediendo a tu panel de control...',
-      });
-
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
-    } else {
-      toast({
-        title: 'Error de autenticación',
-        description: result.error || 'Correo o contraseña incorrectos',
+        title: 'Error',
+        description: 'Ocurrió un error inesperado',
         variant: 'destructive',
       });
     }
