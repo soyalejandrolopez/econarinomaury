@@ -58,23 +58,13 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    // Timeout de seguridad: si después de 3 segundos sigue loading, redirigir
-    if (loading) {
-      const timeout = setTimeout(() => {
-        if (!isAuthenticated) {
-          navigate('/login');
-        }
-      }, 3000);
-      return () => clearTimeout(timeout);
-    }
-    
     if (!loading && !isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, loading, navigate]);
 
-  // Mostrar loader solo si está cargando Y no hay usuario
-  if (loading && !user) {
+  // Mostrar loader solo brevemente
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -85,21 +75,9 @@ const Dashboard = () => {
     );
   }
 
-  // Si no está autenticado y no está cargando, no mostrar nada (redirigirá)
-  if (!isAuthenticated && !loading) {
+  // Si no está autenticado, no mostrar nada
+  if (!isAuthenticated) {
     return null;
-  }
-
-  // Si no hay usuario pero está autenticado, mostrar loader
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Preparando tu panel...</p>
-        </div>
-      </div>
-    );
   }
 
   const statsData = [

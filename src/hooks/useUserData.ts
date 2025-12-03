@@ -17,14 +17,17 @@ export const useUserStats = () => {
     const fetchStats = async () => {
       if (!user?.email) return;
 
-      // Verificar caché primero
+      // Verificar caché primero (opcional)
       const cacheKey = `stats_${user.email}`;
-      const cached = dataCache.get(cacheKey);
-      
-      if (cached) {
-        setStats(cached);
-        setLoading(false);
-        return;
+      try {
+        const cached = dataCache.get(cacheKey);
+        if (cached) {
+          setStats(cached);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Cache error, fetching fresh data:', err);
       }
 
       try {
