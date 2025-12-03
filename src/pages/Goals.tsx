@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserGoals } from '@/hooks/useUserData';
+import { dataCache } from '@/lib/cache';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { Target, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -46,6 +47,7 @@ const Goals = () => {
       if (data) {
         setGoals([...goals, data[0]]);
         setNewGoal({ title: '', target: '', unit: 'kg' });
+        dataCache.clear(`goals_${user.email}`);
         toast({ title: '¡Meta creada!', description: 'Tu nueva meta ha sido agregada' });
       }
     } catch (error) {
@@ -60,6 +62,7 @@ const Goals = () => {
       if (error) throw error;
       
       setGoals(goals.filter(g => g.id !== id));
+      dataCache.clear(`goals_${user.email}`);
       toast({ title: 'Meta eliminada', description: 'La meta ha sido removida' });
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo eliminar la meta', variant: 'destructive' });

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { dataCache } from '@/lib/cache';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { Calendar, ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -43,6 +44,8 @@ const ScheduleCollection = () => {
 
       if (error) throw error;
 
+      dataCache.clear(`collections_${user.email}`);
+      dataCache.clear(`activities_${user.email}_6`);
       toast({ title: '¡Recolección programada!', description: 'Te notificaremos cuando esté confirmada.' });
       navigate('/dashboard');
     } catch (error) {

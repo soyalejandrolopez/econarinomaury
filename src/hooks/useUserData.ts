@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { dataCache } from '@/lib/cache';
 
 export const useUserStats = () => {
   const { user } = useAuth();
@@ -15,6 +16,16 @@ export const useUserStats = () => {
   useEffect(() => {
     const fetchStats = async () => {
       if (!user?.email) return;
+
+      // Verificar caché primero
+      const cacheKey = `stats_${user.email}`;
+      const cached = dataCache.get(cacheKey);
+      
+      if (cached) {
+        setStats(cached);
+        setLoading(false);
+        return;
+      }
 
       try {
         const { data, error } = await supabase
@@ -33,6 +44,7 @@ export const useUserStats = () => {
           }), { wasteCollected: 0, co2Reduced: 0, economicSavings: 0, sustainabilityPoints: 0 });
 
           setStats(totals);
+          dataCache.set(cacheKey, totals);
         }
       } catch (err) {
         console.error('Error fetching stats:', err);
@@ -56,6 +68,15 @@ export const useUserActivities = (limit = 6) => {
     const fetchActivities = async () => {
       if (!user?.email) return;
 
+      const cacheKey = `activities_${user.email}_${limit}`;
+      const cached = dataCache.get(cacheKey);
+      
+      if (cached) {
+        setActivities(cached);
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('activities')
@@ -66,6 +87,7 @@ export const useUserActivities = (limit = 6) => {
 
         if (!error && data) {
           setActivities(data);
+          dataCache.set(cacheKey, data);
         }
       } catch (err) {
         console.error('Error fetching activities:', err);
@@ -89,6 +111,15 @@ export const useUserCollections = () => {
     const fetchCollections = async () => {
       if (!user?.email) return;
 
+      const cacheKey = `collections_${user.email}`;
+      const cached = dataCache.get(cacheKey);
+      
+      if (cached) {
+        setCollections(cached);
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('collections')
@@ -98,6 +129,7 @@ export const useUserCollections = () => {
 
         if (!error && data) {
           setCollections(data);
+          dataCache.set(cacheKey, data);
         }
       } catch (err) {
         console.error('Error fetching collections:', err);
@@ -121,6 +153,15 @@ export const useUserGoals = () => {
     const fetchGoals = async () => {
       if (!user?.email) return;
 
+      const cacheKey = `goals_${user.email}`;
+      const cached = dataCache.get(cacheKey);
+      
+      if (cached) {
+        setGoals(cached);
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('goals')
@@ -130,6 +171,7 @@ export const useUserGoals = () => {
 
         if (!error && data) {
           setGoals(data);
+          dataCache.set(cacheKey, data);
         }
       } catch (err) {
         console.error('Error fetching goals:', err);

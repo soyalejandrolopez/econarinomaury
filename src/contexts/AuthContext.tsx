@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { dataCache } from '@/lib/cache';
 import type { Session } from '@supabase/supabase-js';
 
 interface UserProfile {
@@ -232,6 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    dataCache.clearAll();
     console.log('Logged out successfully');
   };
 
