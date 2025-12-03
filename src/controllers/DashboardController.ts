@@ -22,6 +22,7 @@ export interface DashboardState {
   nextCollection: NextCollection | null;
   monthlyChange: { waste: number; co2: number; savings: number };
   initialLoading: boolean;
+  error: string | null;
 }
 
 const initialState: DashboardState = {
@@ -42,7 +43,8 @@ const initialState: DashboardState = {
   },
   nextCollection: null,
   monthlyChange: { waste: 0, co2: 0, savings: 0 },
-  initialLoading: true
+  initialLoading: true,
+  error: null
 };
 
 export const useDashboardController = (userId: string | undefined) => {
@@ -51,20 +53,26 @@ export const useDashboardController = (userId: string | undefined) => {
   const initialLoadDone = useRef(false);
   const channelsRef = useRef<any[]>([]);
 
-  // Inicializar modelo
-  useEffect(() => {
-    if (userId && !modelRef.current) {
+  // Función para cargar todos los datos
+  const loadAllData = useCallback(async (showLoading = false) => {
+    if (!userId) {
+      setState(prev => ({ ...prev, initialLoading: false, error: 'Usuario no identificado' }));
+      return;
+    }
+
+    // Inicializar modelo si no existe
+    if (!modelRef.current) {
       modelRef.current = getDashboardModel(userId);
     }
-  }, [userId]);
 
-  // Función para cargar todos los datos (sin setState de loading individual)
-  const loadAllData = useCallback(async (showLoading = false) => {
     const model = modelRef.current;
-    if (!model) return;
+    if (!model) {
+      setState(prev => ({ ...prev, initialLoading: false, error: 'Error inicializando modelo' }));
+      return;
+    }
 
     if (showLoading) {
-      setState(prev => ({ ...prev, initialLoading: true }));
+      setState(prev => ({ ...prev, initialLoading: true, error: null }));
     }
 
     try {
@@ -88,13 +96,18 @@ export const useDashboardController = (userId: string | undefined) => {
         currentGoal,
         environmentalImpact,
         nextCollection,
-        initialLoading: false
+        initialLoading: false,
+        error: null
       });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      setState(prev => ({ ...prev, initialLoading: false }));
+      setState(prev => ({
+        ...prev,
+        initialLoading: false,
+        error: 'Error al cargar datos. Por favor, recarga la página.'
+      }));
     }
-  }, []);
+  }, [userId]);
 
   // Funciones de actualización silenciosas (sin loading spinner)
   const refreshStats = useCallback(async () => {
@@ -141,13 +154,31 @@ export const useDashboardController = (userId: string | undefined) => {
     }
   }, []);
 
-  // Carga inicial
+  // Carga inicial - combinada con inicialización del modelo
   useEffect(() => {
-    if (userId && modelRef.current && !initialLoadDone.current) {
+    if (userId && !initialLoadDone.current) {
       initialLoadDone.current = true;
       loadAllData(true);
     }
   }, [userId, loadAllData]);
+
+  // Timeout de seguridad para evitar loading infinito
+  useEffect(() => {
+    if (!userId) return;
+
+    const timeoutId = setTimeout(() => {
+      if (state.initialLoading) {
+        console.warn('Dashboard load timeout');
+        setState(prev => ({
+          ...prev,
+          initialLoading: false,
+          error: 'Tiempo de espera agotado. Por favor, recarga la página.'
+        }));
+      }
+    }, 15000); // 15 segundos de timeout
+
+    return () => clearTimeout(timeoutId);
+  }, [userId, state.initialLoading]);
 
   // Suscripciones en tiempo real (solo configurar una vez)
   useEffect(() => {
@@ -155,44 +186,56 @@ export const useDashboardController = (userId: string | undefined) => {
 
     // Limpiar canales anteriores
     channelsRef.current.forEach(channel => {
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        console.warn('Error removing channel:', e);
+      }
     });
     channelsRef.current = [];
 
-    const channel1 = supabase
-      .channel(`user_stats-${userId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'user_stats',
-        filter: `user_id=eq.${userId}`
-      }, refreshStats)
-      .subscribe();
+    try {
+      const channel1 = supabase
+        .channel(`user_stats-${userId}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'user_stats',
+          filter: `user_id=eq.${userId}`
+        }, refreshStats)
+        .subscribe();
 
-    const channel2 = supabase
-      .channel(`collections-${userId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'collections'
-      }, refreshCollections)
-      .subscribe();
+      const channel2 = supabase
+        .channel(`collections-${userId}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'collections'
+        }, refreshCollections)
+        .subscribe();
 
-    const channel3 = supabase
-      .channel(`activities-${userId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'activities',
-        filter: `user_id=eq.${userId}`
-      }, refreshAchievements)
-      .subscribe();
+      const channel3 = supabase
+        .channel(`activities-${userId}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'activities',
+          filter: `user_id=eq.${userId}`
+        }, refreshAchievements)
+        .subscribe();
 
-    channelsRef.current = [channel1, channel2, channel3];
+      channelsRef.current = [channel1, channel2, channel3];
+    } catch (error) {
+      console.error('Error setting up realtime subscriptions:', error);
+    }
 
     return () => {
       channelsRef.current.forEach(channel => {
-        supabase.removeChannel(channel);
+        try {
+          supabase.removeChannel(channel);
+        } catch (e) {
+          console.warn('Error removing channel on cleanup:', e);
+        }
       });
       channelsRef.current = [];
     };
@@ -208,8 +251,12 @@ export const useDashboardController = (userId: string | undefined) => {
 
   const formatNextCollectionDate = (): string => {
     if (!state.nextCollection) return 'Sin recolecciones programadas';
-    const date = new Date(state.nextCollection.date);
-    return `${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })} - ${state.nextCollection.time}`;
+    try {
+      const date = new Date(state.nextCollection.date);
+      return `${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })} - ${state.nextCollection.time}`;
+    } catch {
+      return 'Sin recolecciones programadas';
+    }
   };
 
   const getGoalProgress = (): number => {

@@ -97,6 +97,35 @@ const AdminDashboardView = ({ isAdmin }: AdminDashboardViewProps) => {
 
   const maxWasteByCity = Math.max(...state.usersByCity.map(c => c.totalWaste), 1);
 
+  // Mostrar loading inicial
+  if (state.initialLoading) {
+    return (
+      <div className="p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando panel administrativo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar error si existe
+  if (state.error) {
+    return (
+      <div className="p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">Error al cargar</h2>
+          <p className="text-muted-foreground mb-4">{state.error}</p>
+          <Button onClick={() => loadAllData()} className="gradient-primary">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 lg:p-8">
       {/* Header */}
