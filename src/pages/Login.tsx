@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import {
@@ -60,9 +61,25 @@ const Login = () => {
           description: 'Accediendo a tu panel de control...',
         });
 
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1000);
+        // Verificar el rol del usuario para redirigir
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
+          const isAdmin = profile?.role === 'admin';
+
+          setTimeout(() => {
+            navigate(isAdmin ? '/admin' : '/dashboard');
+          }, 1000);
+        } else {
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 1000);
+        }
       } else {
         setIsLoading(false);
         toast({

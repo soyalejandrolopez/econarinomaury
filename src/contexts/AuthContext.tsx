@@ -9,6 +9,7 @@ interface UserProfile {
   establishment: string;
   type: string;
   city: string;
+  role: 'user' | 'admin';
 }
 
 interface AuthContextType {
@@ -19,6 +20,7 @@ interface AuthContextType {
   register: (userData: UserProfile & { password: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('name, email, establishment, type, city')
+        .select('name, email, establishment, type, city, role')
         .eq('id', userId)
         .single();
 
@@ -49,7 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
-      return data;
+      return {
+        ...data,
+        role: data.role || 'user'
+      };
     } catch (err) {
       console.error('Error fetching profile:', err);
       return null;
@@ -73,7 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: session.user.email || '',
               establishment: session.user.user_metadata?.establishment || 'Mi Establecimiento',
               type: session.user.user_metadata?.type || 'restaurant',
-              city: session.user.user_metadata?.city || 'Pasto'
+              city: session.user.user_metadata?.city || 'Pasto',
+              role: 'user'
             };
           }
           
@@ -214,7 +220,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: data.user.email || email,
           establishment: data.user.user_metadata?.establishment || 'Mi Establecimiento',
           type: data.user.user_metadata?.type || 'restaurant',
-          city: data.user.user_metadata?.city || 'Pasto'
+          city: data.user.user_metadata?.city || 'Pasto',
+          role: 'user'
         };
       }
 
@@ -238,6 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isAuthenticated = !!session;
+  const isAdmin = user?.role === 'admin';
 
   return (
     <AuthContext.Provider value={{
@@ -247,7 +255,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       register,
       logout,
-      isAuthenticated
+      isAuthenticated,
+      isAdmin
     }}>
       {children}
     </AuthContext.Provider>
