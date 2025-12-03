@@ -189,19 +189,19 @@ const Dashboard = () => {
             <Card className="p-6 shadow-medium">
               <h2 className="text-xl font-bold mb-6">Acciones Rápidas</h2>
               <div className="space-y-3">
-                <Button className="w-full gradient-primary hover-lift justify-start" size="lg">
+                <Button onClick={() => navigate('/programar-recoleccion')} className="w-full gradient-primary hover-lift justify-start" size="lg">
                   <Bell className="w-5 h-5 mr-3" />
                   Programar Recolección
                 </Button>
-                <Button variant="outline" className="w-full hover-lift justify-start" size="lg">
+                <Button onClick={() => navigate('/certificado')} variant="outline" className="w-full hover-lift justify-start" size="lg">
                   <Download className="w-5 h-5 mr-3" />
                   Descargar Certificado
                 </Button>
-                <Button variant="outline" className="w-full hover-lift justify-start" size="lg">
+                <Button onClick={() => navigate('/reportes')} variant="outline" className="w-full hover-lift justify-start" size="lg">
                   <BarChart3 className="w-5 h-5 mr-3" />
                   Ver Reportes Detallados
                 </Button>
-                <Button variant="outline" className="w-full hover-lift justify-start" size="lg">
+                <Button onClick={() => navigate('/metas')} variant="outline" className="w-full hover-lift justify-start" size="lg">
                   <Target className="w-5 h-5 mr-3" />
                   Establecer Metas
                 </Button>

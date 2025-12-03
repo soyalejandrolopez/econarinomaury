@@ -12,6 +12,10 @@ import HowItWorks from "./pages/HowItWorks";
 import Benefits from "./pages/Benefits";
 import Impact from "./pages/Impact";
 import NotFound from "./pages/NotFound";
+import ScheduleCollection from "./pages/ScheduleCollection";
+import Certificate from "./pages/Certificate";
+import Reports from "./pages/Reports";
+import Goals from "./pages/Goals";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +31,10 @@ const App = () => (
             <Route path="/registro" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/programar-recoleccion" element={<ScheduleCollection />} />
+            <Route path="/certificado" element={<Certificate />} />
+            <Route path="/reportes" element={<Reports />} />
+            <Route path="/metas" element={<Goals />} />
             <Route path="/como-funciona" element={<HowItWorks />} />
             <Route path="/beneficios" element={<Benefits />} />
             <Route path="/impacto" element={<Impact />} />
