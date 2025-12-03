@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserStats } from '@/hooks/useUserData';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import { Download, ArrowLeft, Award } from 'lucide-react';
+import { Download, ArrowLeft, Award, Loader2 } from 'lucide-react';
 
 const Certificate = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { stats, loading } = useUserStats();
   const certificateRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = () => {
@@ -46,20 +48,27 @@ const Certificate = () => {
               <h3 className="text-4xl font-bold text-primary">{user?.establishment}</h3>
               <p className="text-lg">Por su compromiso con la economía circular y el aprovechamiento responsable de residuos orgánicos</p>
               
-              <div className="grid grid-cols-3 gap-6 py-8">
-                <div>
-                  <p className="text-3xl font-bold text-primary">847 kg</p>
-                  <p className="text-sm text-muted-foreground">Residuos Aprovechados</p>
+              {loading ? (
+                <div className="py-8 text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                  <p className="text-sm text-muted-foreground mt-2">Cargando datos...</p>
                 </div>
-                <div>
-                  <p className="text-3xl font-bold text-secondary">423 kg</p>
-                  <p className="text-sm text-muted-foreground">CO₂ Reducido</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-6 py-8">
+                  <div>
+                    <p className="text-3xl font-bold text-primary">{Math.round(stats.wasteCollected)} kg</p>
+                    <p className="text-sm text-muted-foreground">Residuos Aprovechados</p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold text-secondary">{Math.round(stats.co2Reduced)} kg</p>
+                    <p className="text-sm text-muted-foreground">CO₂ Reducido</p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold text-accent">{stats.sustainabilityPoints.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground">Puntos Sostenibilidad</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-3xl font-bold text-accent">1,247</p>
-                  <p className="text-sm text-muted-foreground">Puntos Sostenibilidad</p>
-                </div>
-              </div>
+              )}
 
               <div className="pt-8 border-t">
                 <p className="text-sm text-muted-foreground">Contribuyendo al ODS 12: Producción y Consumo Responsables</p>

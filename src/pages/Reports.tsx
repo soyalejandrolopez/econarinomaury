@@ -3,12 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserStats } from '@/hooks/useUserData';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import { ArrowLeft, TrendingUp, Calendar, Download } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Calendar, Download, Loader2 } from 'lucide-react';
 
 const Reports = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { stats, loading } = useUserStats();
 
   const monthlyData = [
     { month: 'Enero', organicos: 120, compostables: 80, reciclables: 45, total: 245 },
@@ -19,10 +21,10 @@ const Reports = () => {
   ];
 
   const impactData = [
-    { metric: 'CO₂ Evitado', value: '423 kg', change: '+18%' },
-    { metric: 'Agua Ahorrada', value: '1,250 L', change: '+12%' },
-    { metric: 'Energía Ahorrada', value: '340 kWh', change: '+15%' },
-    { metric: 'Compost Generado', value: '520 kg', change: '+20%' }
+    { metric: 'CO₂ Evitado', value: loading ? '...' : `${Math.round(stats.co2Reduced)} kg`, change: '+18%' },
+    { metric: 'Agua Ahorrada', value: loading ? '...' : `${Math.round(stats.wasteCollected * 1.5)} L`, change: '+12%' },
+    { metric: 'Energía Ahorrada', value: loading ? '...' : `${Math.round(stats.wasteCollected * 0.4)} kWh`, change: '+15%' },
+    { metric: 'Compost Generado', value: loading ? '...' : `${Math.round(stats.wasteCollected * 0.6)} kg`, change: '+20%' }
   ];
 
   return (
@@ -102,35 +104,41 @@ const Reports = () => {
             <TabsContent value="comparison" className="space-y-6">
               <Card className="p-6">
                 <h2 className="text-2xl font-bold mb-6">Comparativa Regional</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
-                    <div>
-                      <p className="font-semibold">Tu establecimiento</p>
-                      <p className="text-sm text-muted-foreground">847 kg este mes</p>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Tu establecimiento</p>
+                        <p className="text-sm text-muted-foreground">{Math.round(stats.wasteCollected)} kg este año</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-primary">100%</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">100%</p>
+                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Promedio en {user?.city || 'tu ciudad'}</p>
+                        <p className="text-sm text-muted-foreground">620 kg por establecimiento</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold">{Math.round((620 / Math.max(stats.wasteCollected, 1)) * 100)}%</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Promedio en Nariño</p>
+                        <p className="text-sm text-muted-foreground">580 kg por establecimiento</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold">{Math.round((580 / Math.max(stats.wasteCollected, 1)) * 100)}%</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-semibold">Promedio en Pasto</p>
-                      <p className="text-sm text-muted-foreground">620 kg por establecimiento</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold">73%</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-semibold">Promedio en Nariño</p>
-                      <p className="text-sm text-muted-foreground">580 kg por establecimiento</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold">68%</p>
-                    </div>
-                  </div>
-                </div>
+                )}
               </Card>
             </TabsContent>
           </Tabs>
