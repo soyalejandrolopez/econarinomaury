@@ -12,13 +12,8 @@ const Reports = () => {
   const { user } = useAuth();
   const { stats, loading } = useUserStats();
 
-  const monthlyData = [
-    { month: 'Enero', organicos: 120, compostables: 80, reciclables: 45, total: 245 },
-    { month: 'Febrero', organicos: 135, compostables: 90, reciclables: 50, total: 275 },
-    { month: 'Marzo', organicos: 150, compostables: 95, reciclables: 55, total: 300 },
-    { month: 'Abril', organicos: 145, compostables: 100, reciclables: 60, total: 305 },
-    { month: 'Mayo', organicos: 160, compostables: 105, reciclables: 65, total: 330 }
-  ];
+  // Datos mensuales reales del usuario (vacío por ahora, se llenará con datos de Supabase)
+  const monthlyData: any[] = [];
 
   const impactData = [
     { metric: 'CO₂ Evitado', value: loading ? '...' : `${Math.round(stats.co2Reduced)} kg`, change: '+18%' },
@@ -57,30 +52,48 @@ const Reports = () => {
             <TabsContent value="monthly" className="space-y-6">
               <Card className="p-6">
                 <h2 className="text-2xl font-bold mb-6">Residuos por Mes</h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4">Mes</th>
-                        <th className="text-right py-3 px-4">Orgánicos</th>
-                        <th className="text-right py-3 px-4">Compostables</th>
-                        <th className="text-right py-3 px-4">Reciclables</th>
-                        <th className="text-right py-3 px-4">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {monthlyData.map((row, i) => (
-                        <tr key={i} className="border-b hover:bg-muted/50">
-                          <td className="py-3 px-4 font-medium">{row.month}</td>
-                          <td className="text-right py-3 px-4">{row.organicos} kg</td>
-                          <td className="text-right py-3 px-4">{row.compostables} kg</td>
-                          <td className="text-right py-3 px-4">{row.reciclables} kg</td>
-                          <td className="text-right py-3 px-4 font-bold">{row.total} kg</td>
+                {loading ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+                    <p className="text-muted-foreground">Cargando datos...</p>
+                  </div>
+                ) : monthlyData.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-4">Mes</th>
+                          <th className="text-right py-3 px-4">Orgánicos</th>
+                          <th className="text-right py-3 px-4">Compostables</th>
+                          <th className="text-right py-3 px-4">Reciclables</th>
+                          <th className="text-right py-3 px-4">Total</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {monthlyData.map((row, i) => (
+                          <tr key={i} className="border-b hover:bg-muted/50">
+                            <td className="py-3 px-4 font-medium">{row.month}</td>
+                            <td className="text-right py-3 px-4">{row.organicos} kg</td>
+                            <td className="text-right py-3 px-4">{row.compostables} kg</td>
+                            <td className="text-right py-3 px-4">{row.reciclables} kg</td>
+                            <td className="text-right py-3 px-4 font-bold">{row.total} kg</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                      <Calendar className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">Aún no tienes datos mensuales</h3>
+                    <p className="text-muted-foreground mb-6">Comienza programando recolecciones para ver tus estadísticas mensuales</p>
+                    <Button onClick={() => navigate('/programar-recoleccion')} className="gradient-primary">
+                      Programar Primera Recolección
+                    </Button>
+                  </div>
+                )}
               </Card>
             </TabsContent>
 
