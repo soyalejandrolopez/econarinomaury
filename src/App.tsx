@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -20,37 +21,47 @@ import Goals from "./pages/Goals";
 import Traceability from "./pages/Traceability";
 import CollectionMap from "./pages/CollectionMap";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutos
+    },
+  },
+});
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/registro" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/programar-recoleccion" element={<ScheduleCollection />} />
-            <Route path="/certificado" element={<Certificate />} />
-            <Route path="/reportes" element={<Reports />} />
-            <Route path="/metas" element={<Goals />} />
-            <Route path="/trazabilidad" element={<Traceability />} />
-            <Route path="/mapa-recoleccion" element={<CollectionMap />} />
-            <Route path="/como-funciona" element={<HowItWorks />} />
-            <Route path="/beneficios" element={<Benefits />} />
-            <Route path="/impacto" element={<Impact />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/registro" element={<Register />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/programar-recoleccion" element={<ScheduleCollection />} />
+              <Route path="/certificado" element={<Certificate />} />
+              <Route path="/reportes" element={<Reports />} />
+              <Route path="/metas" element={<Goals />} />
+              <Route path="/trazabilidad" element={<Traceability />} />
+              <Route path="/mapa-recoleccion" element={<CollectionMap />} />
+              <Route path="/como-funciona" element={<HowItWorks />} />
+              <Route path="/beneficios" element={<Benefits />} />
+              <Route path="/impacto" element={<Impact />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
