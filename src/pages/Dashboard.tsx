@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserStats, useUserActivities, useUserCollections } from '@/hooks/useUserData';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import Footer from '@/components/Footer';
 import {
@@ -45,6 +46,9 @@ const Dashboard = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState('');
+  const { stats, loading: statsLoading } = useUserStats();
+  const { activities, loading: activitiesLoading } = useUserActivities();
+  const { collections, loading: collectionsLoading } = useUserCollections();
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -98,68 +102,73 @@ const Dashboard = () => {
     );
   }
 
-  const stats = [
+  const statsData = [
     {
       icon: Recycle,
       label: 'Residuos Aprovechados',
-      value: '847',
+      value: statsLoading ? '...' : Math.round(stats.wasteCollected).toString(),
       unit: 'kg',
       change: '+12%',
       changeType: 'positive',
       color: 'from-primary to-accent',
       bgColor: 'bg-primary/10',
       iconColor: 'text-primary',
-      progress: 84,
-      description: 'Total del mes actual',
+      progress: Math.min((stats.wasteCollected / 1000) * 100, 100),
+      description: 'Total del año',
     },
     {
       icon: Leaf,
       label: 'Reducción CO₂',
-      value: '423',
+      value: statsLoading ? '...' : Math.round(stats.co2Reduced).toString(),
       unit: 'kg CO₂eq',
       change: '+18%',
       changeType: 'positive',
       color: 'from-secondary to-info',
       bgColor: 'bg-secondary/10',
       iconColor: 'text-secondary',
-      progress: 92,
+      progress: Math.min((stats.co2Reduced / 500) * 100, 100),
       description: 'Emisiones evitadas',
     },
     {
       icon: TrendingUp,
       label: 'Ahorro Económico',
-      value: '$320,000',
+      value: statsLoading ? '...' : `$${Math.round(stats.economicSavings).toLocaleString()}`,
       unit: 'COP',
       change: '+25%',
       changeType: 'positive',
       color: 'from-accent to-warning',
       bgColor: 'bg-accent/10',
       iconColor: 'text-accent',
-      progress: 68,
+      progress: Math.min((stats.economicSavings / 400000) * 100, 100),
       description: 'Ahorro estimado',
     },
     {
       icon: Award,
       label: 'Puntos Sostenibilidad',
-      value: '1,247',
+      value: statsLoading ? '...' : stats.sustainabilityPoints.toLocaleString(),
       unit: 'pts',
       change: '+8%',
       changeType: 'positive',
       color: 'from-success to-secondary',
       bgColor: 'bg-success/10',
       iconColor: 'text-success',
-      progress: 75,
+      progress: Math.min((stats.sustainabilityPoints / 1500) * 100, 100),
       description: 'Ranking: Top 15%',
     },
   ];
 
-  const recentActivity = [
-    { date: '13 Nov 2025', action: 'Recolección completada', amount: '45 kg', type: 'Orgánicos', status: 'completed', icon: CheckCircle2 },
-    { date: '11 Nov 2025', action: 'Recolección programada', amount: '52 kg', type: 'Compostables', status: 'pending', icon: Clock },
-    { date: '09 Nov 2025', action: 'Certificado generado', amount: '-', type: 'ODS 12', status: 'completed', icon: Award },
-    { date: '07 Nov 2025', action: 'Recolección completada', amount: '38 kg', type: 'Orgánicos', status: 'completed', icon: CheckCircle2 },
-    { date: '05 Nov 2025', action: 'Meta cumplida', amount: '500 kg', type: 'Mensual', status: 'completed', icon: Target },
-    { date: '03 Nov 2025', action: 'Recolección completada', amount: '41 kg', type: 'Orgánicos', status: 'completed', icon: CheckCircle2 },
+  const recentActivity = activitiesLoading ? [] : activities.map(act => ({
+    date: new Date(act.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+    action: act.action,
+    amount: act.amount || '-',
+    type: act.type,
+    status: act.status,
+    icon: act.status === 'completed' ? CheckCircle2 : Clock
+  }));
+
+  // Si no hay actividades, mostrar datos de ejemplo
+  const displayActivities = recentActivity.length > 0 ? recentActivity : [
+    { date: 'Sin datos', action: 'Aún no tienes actividad', amount: '-', type: 'Comienza programando una recolección', status: 'pending', icon: AlertCircle },
   ];
 
   const monthlyData = [
@@ -178,10 +187,18 @@ const Dashboard = () => {
     { type: 'Otros', value: 10, color: 'bg-muted' },
   ];
 
-  const upcomingCollections = [
-    { date: '15 Nov', time: '08:00 AM', type: 'Orgánicos', weight: '~50 kg' },
-    { date: '18 Nov', time: '09:30 AM', type: 'Compostables', weight: '~35 kg' },
-    { date: '22 Nov', time: '08:00 AM', type: 'Orgánicos', weight: '~45 kg' },
+  const upcomingCollections = collectionsLoading ? [] : collections
+    .filter(c => c.status === 'pending' && new Date(c.date) >= new Date())
+    .slice(0, 3)
+    .map(c => ({
+      date: new Date(c.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+      time: c.time,
+      type: c.waste_type,
+      weight: `~${c.estimated_weight} kg`
+    }));
+
+  const displayCollections = upcomingCollections.length > 0 ? upcomingCollections : [
+    { date: 'Sin datos', time: '--:--', type: 'No hay recolecciones programadas', weight: '-- kg' },
   ];
 
   const achievements = [
@@ -280,7 +297,7 @@ const Dashboard = () => {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
+            {statsData.map((stat, index) => (
               <Card
                 key={index}
                 className="p-6 hover-lift shadow-medium border-2 border-transparent hover:border-primary/20 transition-smooth relative overflow-hidden group"
@@ -455,7 +472,7 @@ const Dashboard = () => {
                   <Button variant="ghost" size="sm">Ver Todo <ArrowRight className="w-4 h-4 ml-2" /></Button>
                 </div>
                 <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
+                  {displayActivities.map((activity, index) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-smooth border border-transparent hover:border-primary/10"
@@ -499,7 +516,7 @@ const Dashboard = () => {
                   </Button>
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
-                  {upcomingCollections.map((collection, index) => (
+                  {displayCollections.map((collection, index) => (
                     <Card key={index} className="p-5 border-2 border-primary/10 hover-lift">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserGoals } from '@/hooks/useUserData';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { Target, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -15,34 +16,54 @@ const Goals = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [goals, setGoals] = useState([
-    { id: 1, title: 'Reducir residuos 15%', target: 100, current: 78, unit: '%' },
-    { id: 2, title: 'Alcanzar 1000 kg', target: 1000, current: 847, unit: 'kg' }
-  ]);
+  const { goals: userGoals, loading, setGoals: setUserGoals } = useUserGoals();
+  const [goals, setGoals] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (userGoals) {
+      setGoals(userGoals);
+    }
+  }, [userGoals]);
   const [newGoal, setNewGoal] = useState({ title: '', target: '', unit: 'kg' });
 
   const handleAddGoal = async () => {
-    if (!newGoal.title || !newGoal.target) {
+    if (!newGoal.title || !newGoal.target || !user) {
       toast({ title: 'Error', description: 'Completa todos los campos', variant: 'destructive' });
       return;
     }
 
-    const goal = {
-      id: Date.now(),
-      title: newGoal.title,
-      target: parseFloat(newGoal.target),
-      current: 0,
-      unit: newGoal.unit
-    };
+    try {
+      const { data, error } = await supabase.from('goals').insert({
+        user_id: user.email,
+        title: newGoal.title,
+        target: parseFloat(newGoal.target),
+        current: 0,
+        unit: newGoal.unit
+      }).select();
 
-    setGoals([...goals, goal]);
-    setNewGoal({ title: '', target: '', unit: 'kg' });
-    toast({ title: '¡Meta creada!', description: 'Tu nueva meta ha sido agregada' });
+      if (error) throw error;
+
+      if (data) {
+        setGoals([...goals, data[0]]);
+        setNewGoal({ title: '', target: '', unit: 'kg' });
+        toast({ title: '¡Meta creada!', description: 'Tu nueva meta ha sido agregada' });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudo crear la meta', variant: 'destructive' });
+    }
   };
 
-  const handleDeleteGoal = (id: number) => {
-    setGoals(goals.filter(g => g.id !== id));
-    toast({ title: 'Meta eliminada', description: 'La meta ha sido removida' });
+  const handleDeleteGoal = async (id: string) => {
+    try {
+      const { error } = await supabase.from('goals').delete().eq('id', id);
+      
+      if (error) throw error;
+      
+      setGoals(goals.filter(g => g.id !== id));
+      toast({ title: 'Meta eliminada', description: 'La meta ha sido removida' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudo eliminar la meta', variant: 'destructive' });
+    }
   };
 
   return (
