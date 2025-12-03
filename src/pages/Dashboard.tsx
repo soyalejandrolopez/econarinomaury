@@ -47,34 +47,55 @@ const Dashboard = () => {
   const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, loading, navigate]);
-
-  useEffect(() => {
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('Buenos días');
     else if (hour < 18) setGreeting('Buenas tardes');
     else setGreeting('Buenas noches');
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    // Timeout de seguridad: si después de 3 segundos sigue loading, redirigir
+    if (loading) {
+      const timeout = setTimeout(() => {
+        if (!isAuthenticated) {
+          navigate('/login');
+        }
+      }, 3000);
+      return () => clearTimeout(timeout);
+    }
+    
+    if (!loading && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  // Mostrar loader solo si está cargando Y no hay usuario
+  if (loading && !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full gradient-primary opacity-20 animate-ping absolute inset-0"></div>
-            <Loader2 className="w-20 h-20 animate-spin text-primary relative" />
-          </div>
-          <p className="text-muted-foreground mt-6 text-lg">Cargando tu panel...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated || !user) {
+  // Si no está autenticado y no está cargando, no mostrar nada (redirigirá)
+  if (!isAuthenticated && !loading) {
     return null;
+  }
+
+  // Si no hay usuario pero está autenticado, mostrar loader
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Preparando tu panel...</p>
+        </div>
+      </div>
+    );
   }
 
   const stats = [
