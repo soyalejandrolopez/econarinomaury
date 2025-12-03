@@ -73,7 +73,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
 
         if (session?.user) {
-          const profile = await fetchUserProfile(session.user.id);
+          let profile = await fetchUserProfile(session.user.id);
+          
+          // Si no existe el perfil, usar datos del metadata
+          if (!profile) {
+            profile = {
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuario',
+              email: session.user.email || '',
+              establishment: session.user.user_metadata?.establishment || 'Mi Establecimiento',
+              type: session.user.user_metadata?.type || 'restaurant',
+              city: session.user.user_metadata?.city || 'Pasto'
+            };
+          }
+          
           setUser(profile);
         }
       } catch (err) {
@@ -194,11 +206,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'No se pudo iniciar sesión' };
       }
 
-      // Obtener perfil del usuario
-      const profile = await fetchUserProfile(data.user.id);
+      // Intentar obtener perfil del usuario
+      let profile = await fetchUserProfile(data.user.id);
       
+      // Si no existe el perfil, usar datos del metadata o crear uno temporal
       if (!profile) {
-        return { success: false, error: 'No se encontró el perfil del usuario' };
+        console.warn('Profile not found, using metadata or defaults');
+        profile = {
+          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario',
+          email: data.user.email || email,
+          establishment: data.user.user_metadata?.establishment || 'Mi Establecimiento',
+          type: data.user.user_metadata?.type || 'restaurant',
+          city: data.user.user_metadata?.city || 'Pasto'
+        };
       }
 
       setUser(profile);
