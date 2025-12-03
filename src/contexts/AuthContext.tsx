@@ -58,7 +58,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Timeout de seguridad
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session timeout')), 5000)
+        );
+
+        const sessionPromise = supabase.auth.getSession();
+        
+        const { data: { session } } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
+
         setSession(session);
 
         if (session?.user) {
@@ -67,6 +78,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (err) {
         console.error('Error getting session:', err);
+        // Si hay error, asegurar que loading se ponga en false
+        setSession(null);
+        setUser(null);
       } finally {
         setLoading(false);
       }
