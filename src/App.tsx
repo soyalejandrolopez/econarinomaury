@@ -16,6 +16,8 @@ import ScheduleCollection from "./pages/ScheduleCollection";
 import Certificate from "./pages/Certificate";
 import Reports from "./pages/Reports";
 import Goals from "./pages/Goals";
+import Traceability from "./pages/Traceability";
+import CollectionMap from "./pages/CollectionMap";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,8 @@ const App = () => (
             <Route path="/certificado" element={<Certificate />} />
             <Route path="/reportes" element={<Reports />} />
             <Route path="/metas" element={<Goals />} />
+            <Route path="/trazabilidad" element={<Traceability />} />
+            <Route path="/mapa-recoleccion" element={<CollectionMap />} />
             <Route path="/como-funciona" element={<HowItWorks />} />
             <Route path="/beneficios" element={<Benefits />} />
             <Route path="/impacto" element={<Impact />} />
