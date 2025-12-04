@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { dataCache } from '@/lib/cache';
-import type { Session } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 
 interface UserProfile {
   id: string;
@@ -34,21 +34,40 @@ export const useAuth = () => {
   return context;
 };
 
+// Crear perfil desde metadata del usuario (fallback rápido)
+const createProfileFromMetadata = (authUser: User): UserProfile => ({
+  id: authUser.id,
+  name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuario',
+  email: authUser.email || '',
+  establishment: authUser.user_metadata?.establishment || 'Mi Establecimiento',
+  type: authUser.user_metadata?.type || 'restaurant',
+  city: authUser.user_metadata?.city || 'Pasto',
+  role: 'user'
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const initializedRef = useRef(false);
 
+  // Fetch profile con timeout de 5 segundos
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, email, establishment, type, city, role')
         .eq('id', userId)
-        .single();
+        .single()
+        .abortSignal(controller.signal);
+
+      clearTimeout(timeoutId);
 
       if (error) {
-        console.error('Error fetching user profile:', error);
+        console.warn('Error fetching profile:', error.message);
         return null;
       }
 
@@ -56,69 +75,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...data,
         role: data.role || 'user'
       };
-    } catch (err) {
-      console.error('Error fetching profile:', err);
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        console.warn('Profile fetch timeout');
+      } else {
+        console.error('Error fetching profile:', err);
+      }
       return null;
     }
   };
 
-  useEffect(() => {
-    const initSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        setSession(session);
+  // Cargar perfil en background (no bloquea UI)
+  const loadProfileInBackground = async (authUser: User) => {
+    const profile = await fetchUserProfile(authUser.id);
+    if (profile) {
+      setUser(profile);
+    }
+  };
 
-        if (session?.user) {
-          let profile = await fetchUserProfile(session.user.id);
-          
-          // Si no existe el perfil, usar datos del metadata
-          if (!profile) {
-            profile = {
-              id: session.user.id,
-              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuario',
-              email: session.user.email || '',
-              establishment: session.user.user_metadata?.establishment || 'Mi Establecimiento',
-              type: session.user.user_metadata?.type || 'restaurant',
-              city: session.user.user_metadata?.city || 'Pasto',
-              role: 'user'
-            };
-          }
-          
-          setUser(profile);
+  useEffect(() => {
+    // Evitar doble inicialización
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    const initAuth = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+        if (currentSession?.user) {
+          setSession(currentSession);
+          // Usar metadata inmediatamente para no bloquear
+          setUser(createProfileFromMetadata(currentSession.user));
+          setLoading(false);
+          // Cargar perfil completo en background
+          loadProfileInBackground(currentSession.user);
+        } else {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
         }
       } catch (err) {
-        console.error('Error getting session:', err);
-        // Si hay error, asegurar que loading se ponga en false
+        console.error('Error initializing auth:', err);
         setSession(null);
         setUser(null);
-      } finally {
         setLoading(false);
       }
     };
 
-    // Timeout de seguridad de 10 segundos
+    // Timeout de seguridad de 3 segundos (más corto)
     const timeoutId = setTimeout(() => {
-      console.warn('Session init timeout, setting loading to false');
-      setLoading(false);
-    }, 10000);
+      if (loading) {
+        console.warn('Auth init timeout');
+        setLoading(false);
+      }
+    }, 3000);
 
-    initSession().finally(() => clearTimeout(timeoutId));
+    initAuth().finally(() => clearTimeout(timeoutId));
 
+    // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         console.log('Auth event:', event);
-        setSession(newSession);
 
         if (event === 'SIGNED_OUT' || !newSession) {
           setUser(null);
           setSession(null);
+          setLoading(false);
         } else if (newSession?.user) {
-          const profile = await fetchUserProfile(newSession.user.id);
-          setUser(profile);
+          setSession(newSession);
+          // Usar metadata inmediatamente
+          setUser(createProfileFromMetadata(newSession.user));
+          setLoading(false);
+          // Cargar perfil completo en background
+          loadProfileInBackground(newSession.user);
         }
-
-        setLoading(false);
       }
     );
 
@@ -129,9 +160,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { password, ...profileData } = userData;
 
-      console.log('Starting registration for:', userData.email);
-
-      // 1. Crear usuario en Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: password,
@@ -145,8 +173,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
-      console.log('SignUp response:', { authData, authError });
-
       if (authError) {
         console.error('Auth error:', authError);
         return { success: false, error: authError.message };
@@ -156,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'No se pudo crear el usuario' };
       }
 
-      // 2. Crear perfil en la tabla profiles
+      // Crear perfil en la tabla profiles
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -168,26 +194,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           city: profileData.city,
         });
 
-      console.log('Profile insert result:', { profileError });
-
       if (profileError) {
         console.error('Profile error:', profileError);
-        // Si falla la creación del perfil, eliminar el usuario de auth
         await supabase.auth.signOut();
         return { success: false, error: 'Error al crear perfil: ' + profileError.message };
       }
 
-      // 3. Actualizar estado local solo si hay sesión
       if (authData.session) {
         setSession(authData.session);
         setUser({
           id: authData.user.id,
-          ...profileData
+          ...profileData,
+          role: 'user'
         });
-        return { success: true };
       }
 
-      // Si no hay sesión inmediata, el usuario debe confirmar email
       return { success: true };
     } catch (error) {
       console.error('Registration error:', error);
@@ -197,14 +218,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      console.log('Starting login for:', email);
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
-      console.log('Login response:', { data, error });
 
       if (error) {
         return { success: false, error: error.message };
@@ -214,25 +231,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'No se pudo iniciar sesión' };
       }
 
-      // Intentar obtener perfil del usuario
-      let profile = await fetchUserProfile(data.user.id);
-      
-      // Si no existe el perfil, usar datos del metadata o crear uno temporal
-      if (!profile) {
-        console.warn('Profile not found, using metadata or defaults');
-        profile = {
-          id: data.user.id,
-          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario',
-          email: data.user.email || email,
-          establishment: data.user.user_metadata?.establishment || 'Mi Establecimiento',
-          type: data.user.user_metadata?.type || 'restaurant',
-          city: data.user.user_metadata?.city || 'Pasto',
-          role: 'user'
-        };
-      }
-
-      setUser(profile);
+      // Establecer sesión y usuario básico inmediatamente
       setSession(data.session);
+      setUser(createProfileFromMetadata(data.user));
+
+      // Cargar perfil completo en background
+      loadProfileInBackground(data.user);
 
       return { success: true };
     } catch (error) {
@@ -242,12 +246,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    console.log('Logging out...');
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     dataCache.clearAll();
-    console.log('Logged out successfully');
   };
 
   const isAuthenticated = !!session;
