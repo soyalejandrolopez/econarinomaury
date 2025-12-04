@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import TrazabilidadView from '@/views/TrazabilidadView';
@@ -8,6 +8,8 @@ import { Loader2 } from 'lucide-react';
 const Traceability = () => {
   const { user, isAuthenticated, loading, session } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const collectionId = searchParams.get('collection_id');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -34,7 +36,7 @@ const Traceability = () => {
     <div className="min-h-screen bg-background flex">
       <DashboardSidebar />
       <div className="flex-1 lg:ml-64">
-        <TrazabilidadView userId={session?.user?.id} />
+        <TrazabilidadView userId={session?.user?.id} collectionId={collectionId} />
       </div>
     </div>
   );
