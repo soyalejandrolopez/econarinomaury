@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserActivities, useUserCollections } from '@/hooks/useUserData';
 import { useDashboardController } from '@/controllers/DashboardController';
+import AdminUsersPanel from '@/components/AdminUsersPanel';
 import {
   TrendingUp,
   Recycle,
@@ -61,6 +62,7 @@ interface DashboardViewProps {
 
 const DashboardView = ({ user, session }: DashboardViewProps) => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const { activities, loading: activitiesLoading } = useUserActivities();
   const { collections, loading: collectionsLoading } = useUserCollections();
 
@@ -265,6 +267,9 @@ const DashboardView = ({ user, session }: DashboardViewProps) => {
           </div>
         </Card>
       </div>
+
+      {/* Admin Panel - Solo visible para administradores */}
+      {isAdmin && <AdminUsersPanel />}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
