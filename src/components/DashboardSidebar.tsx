@@ -15,14 +15,16 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
-  Bell
+  Bell,
+  Users,
+  Shield
 } from 'lucide-react';
 
 const DashboardSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -33,6 +35,11 @@ const DashboardSidebar = () => {
     { icon: MapPin, label: 'Mapa', path: '/mapa-recoleccion' },
     { icon: Route, label: 'Trazabilidad', path: '/trazabilidad' },
   ];
+
+  // Agregar opción de admin si el usuario es administrador
+  const adminMenuItems = isAdmin ? [
+    { icon: Users, label: 'Administrar Usuarios', path: '/admin/usuarios' },
+  ] : [];
 
   const handleLogout = async () => {
     await logout();
@@ -108,6 +115,40 @@ const DashboardSidebar = () => {
                 );
               })}
             </ul>
+
+            {/* Admin Menu */}
+            {isAdmin && adminMenuItems.length > 0 && (
+              <>
+                <div className={`my-4 border-t border-border ${collapsed ? '' : 'mx-2'}`} />
+                {!collapsed && (
+                  <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-primary uppercase tracking-wider">
+                    <Shield className="w-4 h-4" />
+                    Administración
+                  </div>
+                )}
+                <ul className="space-y-2">
+                  {adminMenuItems.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    return (
+                      <li key={item.path}>
+                        <Link
+                          to={item.path}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                            isActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                          } ${collapsed ? 'justify-center' : ''}`}
+                          title={collapsed ? item.label : ''}
+                        >
+                          <item.icon className="w-5 h-5 flex-shrink-0" />
+                          {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
           </nav>
 
           {/* Footer */}

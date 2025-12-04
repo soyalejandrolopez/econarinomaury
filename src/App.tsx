@@ -20,6 +20,7 @@ import Reports from "./pages/Reports";
 import Goals from "./pages/Goals";
 import Traceability from "./pages/Traceability";
 import CollectionMap from "./pages/CollectionMap";
+import AdminUsers from "./pages/AdminUsers";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/usuarios" element={<AdminUsers />} />
               <Route path="/programar-recoleccion" element={<ScheduleCollection />} />
               <Route path="/certificado" element={<Certificate />} />
               <Route path="/reportes" element={<Reports />} />
