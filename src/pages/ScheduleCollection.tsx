@@ -23,7 +23,11 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  RefreshCw
+  RefreshCw,
+  Building2,
+  Factory,
+  Recycle,
+  TreePine
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -36,8 +40,18 @@ interface Collection {
   estimated_weight: number;
   notes: string;
   status: 'pending' | 'completed' | 'cancelled';
+  traceability_step: string;
   created_at: string;
 }
+
+// Etapas de trazabilidad
+const TRACEABILITY_STEPS = [
+  { value: 'generacion', label: 'Generación', icon: Building2, color: 'bg-primary text-primary' },
+  { value: 'recoleccion', label: 'Recolección', icon: Truck, color: 'bg-secondary text-secondary' },
+  { value: 'procesamiento', label: 'Procesamiento', icon: Factory, color: 'bg-accent text-accent' },
+  { value: 'transformacion', label: 'Transformación', icon: Recycle, color: 'bg-info text-info' },
+  { value: 'distribucion', label: 'Distribución', icon: TreePine, color: 'bg-success text-success' }
+];
 
 const ScheduleCollection = () => {
   const navigate = useNavigate();
@@ -53,6 +67,7 @@ const ScheduleCollection = () => {
     time: '',
     wasteType: '',
     estimatedWeight: '',
+    traceabilityStep: 'generacion',
     notes: ''
   });
 
@@ -84,7 +99,7 @@ const ScheduleCollection = () => {
 
   // Reset form
   const resetForm = () => {
-    setFormData({ date: '', time: '', wasteType: '', estimatedWeight: '', notes: '' });
+    setFormData({ date: '', time: '', wasteType: '', estimatedWeight: '', traceabilityStep: 'generacion', notes: '' });
     setEditingCollection(null);
     setShowForm(false);
   };
@@ -97,6 +112,7 @@ const ScheduleCollection = () => {
       time: collection.time,
       wasteType: collection.waste_type,
       estimatedWeight: collection.estimated_weight.toString(),
+      traceabilityStep: collection.traceability_step || 'generacion',
       notes: collection.notes || ''
     });
     setShowForm(true);
@@ -115,6 +131,9 @@ const ScheduleCollection = () => {
 
     setIsSaving(true);
     try {
+      // Determinar el estado basado en la etapa de trazabilidad
+      const status = formData.traceabilityStep === 'distribucion' ? 'completed' : 'pending';
+
       if (editingCollection) {
         // Actualizar
         const { error } = await supabase
@@ -124,6 +143,8 @@ const ScheduleCollection = () => {
             time: formData.time,
             waste_type: formData.wasteType,
             estimated_weight: parseFloat(formData.estimatedWeight),
+            traceability_step: formData.traceabilityStep,
+            status: status,
             notes: formData.notes,
             updated_at: new Date().toISOString()
           })
@@ -141,8 +162,9 @@ const ScheduleCollection = () => {
             time: formData.time,
             waste_type: formData.wasteType,
             estimated_weight: parseFloat(formData.estimatedWeight),
-            notes: formData.notes,
-            status: 'pending'
+            traceability_step: formData.traceabilityStep,
+            status: status,
+            notes: formData.notes
           });
 
         if (error) throw error;
@@ -222,6 +244,15 @@ const ScheduleCollection = () => {
     return types[type] || type;
   };
 
+  const getStepInfo = (stepValue: string) => {
+    return TRACEABILITY_STEPS.find(s => s.value === stepValue) || TRACEABILITY_STEPS[0];
+  };
+
+  const getStepNumber = (stepValue: string) => {
+    const index = TRACEABILITY_STEPS.findIndex(s => s.value === stepValue);
+    return index >= 0 ? index + 1 : 1;
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       <DashboardSidebar />
@@ -240,7 +271,7 @@ const ScheduleCollection = () => {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold">Mis Recolecciones</h1>
-                  <p className="text-muted-foreground">Gestiona tus recolecciones programadas</p>
+                  <p className="text-muted-foreground">Gestiona tus recolecciones y su trazabilidad</p>
                 </div>
               </div>
             </div>
@@ -281,7 +312,6 @@ const ScheduleCollection = () => {
                         required
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                        min={new Date().toISOString().split('T')[0]}
                       />
                     </div>
                     <div>
@@ -324,6 +354,32 @@ const ScheduleCollection = () => {
                       onChange={(e) => setFormData({ ...formData, estimatedWeight: e.target.value })}
                       placeholder="Ej: 25.5"
                     />
+                  </div>
+
+                  {/* Campo de Etapa de Trazabilidad */}
+                  <div>
+                    <Label>Etapa de Trazabilidad *</Label>
+                    <Select
+                      value={formData.traceabilityStep}
+                      onValueChange={(value) => setFormData({ ...formData, traceabilityStep: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona la etapa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TRACEABILITY_STEPS.map((step) => (
+                          <SelectItem key={step.value} value={step.value}>
+                            <div className="flex items-center gap-2">
+                              <step.icon className="w-4 h-4" />
+                              <span>Paso {TRACEABILITY_STEPS.indexOf(step) + 1}: {step.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Indica en qué etapa del proceso se encuentra esta recolección
+                    </p>
                   </div>
 
                   <div>
@@ -385,73 +441,80 @@ const ScheduleCollection = () => {
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Hora</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Tipo</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Peso Est.</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Etapa</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Estado</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {collections.map((collection) => (
-                      <tr
-                        key={collection.id}
-                        className="border-b border-border/50 hover:bg-muted/30 transition-colors"
-                      >
-                        <td className="py-4 px-4">
-                          <div className="font-medium">
-                            {new Date(collection.date).toLocaleDateString('es-ES', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric'
-                            })}
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-muted-foreground">{collection.time}</td>
-                        <td className="py-4 px-4">
-                          <span className="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
-                            {getWasteTypeLabel(collection.waste_type)}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 font-medium">{collection.estimated_weight} kg</td>
-                        <td className="py-4 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(collection.status)}`}>
-                            {getStatusIcon(collection.status)}
-                            {getStatusLabel(collection.status)}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => viewTraceability(collection)}
-                              title="Ver trazabilidad"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {collection.status === 'pending' && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEditForm(collection)}
-                                  title="Editar"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDelete(collection.id)}
-                                  className="text-destructive hover:text-destructive"
-                                  title="Eliminar"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {collections.map((collection) => {
+                      const stepInfo = getStepInfo(collection.traceability_step);
+                      const StepIcon = stepInfo.icon;
+                      return (
+                        <tr
+                          key={collection.id}
+                          className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                        >
+                          <td className="py-4 px-4">
+                            <div className="font-medium">
+                              {new Date(collection.date).toLocaleDateString('es-ES', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-muted-foreground">{collection.time}</td>
+                          <td className="py-4 px-4">
+                            <span className="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
+                              {getWasteTypeLabel(collection.waste_type)}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 font-medium">{collection.estimated_weight} kg</td>
+                          <td className="py-4 px-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${stepInfo.color.replace('text-', 'bg-').replace('bg-', 'bg-')}/10 ${stepInfo.color.split(' ')[1]}`}>
+                              <StepIcon className="w-3 h-3" />
+                              {getStepNumber(collection.traceability_step)}. {stepInfo.label}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(collection.status)}`}>
+                              {getStatusIcon(collection.status)}
+                              {getStatusLabel(collection.status)}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => viewTraceability(collection)}
+                                title="Ver trazabilidad"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditForm(collection)}
+                                title="Editar"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(collection.id)}
+                                className="text-destructive hover:text-destructive"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -60,8 +60,11 @@ const TrazabilidadView = ({ userId, collectionId }: TrazabilidadViewProps) => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [steps, setSteps] = useState<TraceabilityStep[]>([]);
 
+  // Mapeo de etapas a índices
+  const STEP_ORDER = ['generacion', 'recoleccion', 'procesamiento', 'transformacion', 'distribucion'];
+
   // Generar pasos de trazabilidad basados en la recolección
-  const generateSteps = useCallback((col: Collection): TraceabilityStep[] => {
+  const generateSteps = useCallback((col: Collection & { traceability_step?: string }): TraceabilityStep[] => {
     const colDate = new Date(col.date);
     const formatDate = (d: Date) => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -73,6 +76,10 @@ const TrazabilidadView = ({ userId, collectionId }: TrazabilidadViewProps) => {
     };
     const wasteLabel = wasteTypeLabels[col.waste_type] || col.waste_type;
 
+    // Obtener el índice de la etapa actual
+    const currentStep = col.traceability_step || 'generacion';
+    const currentStepIndex = STEP_ORDER.indexOf(currentStep);
+
     // Fechas estimadas basadas en el estado
     const recoleccionDate = new Date(colDate);
     const procesamientoDate = new Date(colDate);
@@ -82,8 +89,12 @@ const TrazabilidadView = ({ userId, collectionId }: TrazabilidadViewProps) => {
     const distribucionDate = new Date(colDate);
     distribucionDate.setDate(distribucionDate.getDate() + 7);
 
-    const isCompleted = col.status === 'completed';
-    const isPending = col.status === 'pending';
+    // Función para determinar el estado de cada paso
+    const getStepStatus = (stepIndex: number): 'completed' | 'in_progress' | 'pending' => {
+      if (stepIndex < currentStepIndex) return 'completed';
+      if (stepIndex === currentStepIndex) return 'in_progress';
+      return 'pending';
+    };
 
     return [
       {
@@ -93,7 +104,7 @@ const TrazabilidadView = ({ userId, collectionId }: TrazabilidadViewProps) => {
         time: col.time,
         location: user?.establishment || 'Tu establecimiento',
         details: `${col.estimated_weight} kg de residuos ${wasteLabel} clasificados`,
-        status: 'completed'
+        status: getStepStatus(0)
       },
       {
         step: 2,
@@ -101,35 +112,35 @@ const TrazabilidadView = ({ userId, collectionId }: TrazabilidadViewProps) => {
         date: formatDate(recoleccionDate),
         time: col.time,
         location: 'Ruta de recolección asignada',
-        details: isPending ? 'Pendiente de recolección' : 'Recolección realizada exitosamente',
-        status: isPending ? 'in_progress' : 'completed'
+        details: getStepStatus(1) === 'completed' ? 'Recolección realizada exitosamente' : 'Pendiente de recolección',
+        status: getStepStatus(1)
       },
       {
         step: 3,
         title: 'Procesamiento',
-        date: isCompleted ? formatDate(procesamientoDate) : `Estimado: ${procesamientoDate.getDate()} ${procesamientoDate.toLocaleDateString('es-ES', { month: 'short' })}`,
-        time: isCompleted ? '10:00' : '-',
+        date: getStepStatus(2) === 'completed' ? formatDate(procesamientoDate) : `Estimado: ${procesamientoDate.getDate()} ${procesamientoDate.toLocaleDateString('es-ES', { month: 'short' })}`,
+        time: getStepStatus(2) === 'completed' ? '10:00' : '-',
         location: 'Centro de Acopio EcoNariño',
-        details: isCompleted ? 'Clasificación y pesaje completado' : 'En espera de procesamiento',
-        status: isCompleted ? 'completed' : 'pending'
+        details: getStepStatus(2) === 'completed' ? 'Clasificación y pesaje completado' : 'En espera de procesamiento',
+        status: getStepStatus(2)
       },
       {
         step: 4,
         title: 'Transformación',
-        date: isCompleted ? formatDate(transformacionDate) : `Estimado: ${transformacionDate.getDate()} ${transformacionDate.toLocaleDateString('es-ES', { month: 'short' })}`,
-        time: isCompleted ? '14:00' : '-',
+        date: getStepStatus(3) === 'completed' ? formatDate(transformacionDate) : `Estimado: ${transformacionDate.getDate()} ${transformacionDate.toLocaleDateString('es-ES', { month: 'short' })}`,
+        time: getStepStatus(3) === 'completed' ? '14:00' : '-',
         location: 'Planta de Compostaje EcoNariño',
         details: 'Conversión a compost orgánico',
-        status: isCompleted ? 'completed' : 'pending'
+        status: getStepStatus(3)
       },
       {
         step: 5,
         title: 'Distribución',
-        date: isCompleted ? formatDate(distribucionDate) : `Estimado: ${distribucionDate.getDate()} ${distribucionDate.toLocaleDateString('es-ES', { month: 'short' })}`,
-        time: isCompleted ? '09:00' : '-',
+        date: getStepStatus(4) === 'completed' ? formatDate(distribucionDate) : `Estimado: ${distribucionDate.getDate()} ${distribucionDate.toLocaleDateString('es-ES', { month: 'short' })}`,
+        time: getStepStatus(4) === 'completed' ? '09:00' : '-',
         location: 'Granjas asociadas',
         details: 'Entrega a productores agrícolas',
-        status: isCompleted ? 'completed' : 'pending'
+        status: getStepStatus(4)
       }
     ];
   }, [user?.establishment]);
